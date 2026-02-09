@@ -20,44 +20,8 @@ import java.util.jar.JarFile;
 
 /// # Slava Dukerani
 ///
-/// A Minesweeper/Sokoban cross-over game where you must find and avoid mines while pushing a sensor to clear a path to the
-/// exit on the other side of the map. The game features procedurally generated levels, multiple difficulty settings,
-/// and a variety of power-ups to help you navigate the treacherous minefield. Can you survive the dangers of Slava
-/// Dukerani and reach the exit?
+/// Please see [README](../../../../../README.md) in this project for more details.
 ///
-/// Like Minesweeper, the game is played on a grid of squares, some of which contain mines. The player must use logic
-/// and deduction to determine which squares are safe to click on and which ones contain mines.
-///
-/// Like Sokoban, the player can move around the grid and push the sensor to clear a path to the exit. The sensor cannot
-/// be pulled, only pushed. The player must carefully plan their moves to avoid getting trapped or stepping on a mine.
-/// The sensor equipment can detect nearby mines, but has a limited range and as such has to be pushed strategically to
-/// be effective.  The squares within range of the sensor will display a number indicationg how many mines are adjacent
-/// to that square, similar to Minesweeper. This information can be used to deduce the location of mines and plan the
-/// player's moves accordingly.
-///
-/// Players can also flag squares they believe contain mines, which can help them keep track of potential dangers. The
-/// game ends when the player successfully reaches the exit or steps on a mine, resulting in a game over. With its
-/// unique blend of puzzle-solving and strategic gameplay, Slava Dukerani offers a thrilling and challenging experience
-/// for fans of both Minesweeper and Sokoban.
-///
-/// # Gameplay
-///
-/// The player wins when Duke or the sensors stands on the exit tile.  The player loses if Duke steps on a mine, if the
-/// sensor is pushed onto a mine, or if a mine is revealed by clicking on it.  The player can also lose by getting
-/// themselves trapped in a corner with no way to move without stepping on a mine, or by getting the sensor stuck.
-///
-/// # Controls
-///
-/// Hover the mouse over the game tiles.
-///
-/// Dark gray tiles are hidden.  They might have a mine.  Right click to toggle a flag on them to help you remember
-/// where you think mines are.  Left click to reveal an unflagged hidden tile.  If you reveal a mine, it's game over.
-/// Sometimes if you clear an empty tile it will also clear adjacent empty tiles, just like Minesweeper.
-///
-/// White tiles are empty.  If they have a number on them, that number indicates how many mines are adjacent to that
-/// tile, including diagonals.  Left click on a tile adjacent to Duke to move Duke there.  You can only move to tiles
-/// that are cardinally adjacent to Duke, not diagonally.  If you move onto a mine, it's game over.  If you move into
-/// the sensor tile it will attempt to push the sensor in the same direction.
 public class SlavaDukerani extends JPanel {
     public static void main( String[] args ) {
         // open a centered 800x600 window with the title "Slava Dukerani"
