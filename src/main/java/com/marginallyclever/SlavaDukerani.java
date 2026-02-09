@@ -42,7 +42,7 @@ import java.util.jar.JarFile;
 ///
 /// # Gameplay
 ///
-/// The player wins when Duke pushes the sensor onto the exit tile.  The player loses if Duke steps on a mine, if the
+/// The player wins when Duke or the sensors stands on the exit tile.  The player loses if Duke steps on a mine, if the
 /// sensor is pushed onto a mine, or if a mine is revealed by clicking on it.  The player can also lose by getting
 /// themselves trapped in a corner with no way to move without stepping on a mine, or by getting the sensor stuck.
 ///
@@ -145,14 +145,15 @@ public class SlavaDukerani extends JPanel {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                int dx=0,dy=0;
-                switch(e.getKeyCode()) {
-                    case KeyEvent.VK_UP: dy=-1; break;
-                    case KeyEvent.VK_DOWN: dy=1; break;
-                    case KeyEvent.VK_LEFT: dx=-1; break;
-                    case KeyEvent.VK_RIGHT: dx=1; break;
-                }
-                movePlayer(dx, dy);
+            if(gameOver) return;
+            int dx=0,dy=0;
+            switch(e.getKeyCode()) {
+                case KeyEvent.VK_UP: dy=-1; break;
+                case KeyEvent.VK_DOWN: dy=1; break;
+                case KeyEvent.VK_LEFT: dx=-1; break;
+                case KeyEvent.VK_RIGHT: dx=1; break;
+            }
+            movePlayer(dx, dy);
             }
         });
     }
@@ -166,11 +167,15 @@ public class SlavaDukerani extends JPanel {
         var tile = grid[x][y];
         if(tile.type == 1) {
             // you died, game over
-            gameOver=true;
             System.out.println("You died.  Game over!");
+            fireGameOver(false);
+        } else if(tile.type==2) {
+            // you win!
+            System.out.println("You win!");
+            fireGameOver(true);
         }
-        if(sx ==x && sy ==y) {
-            // try to push box
+        // if pushing into the sensor, try to push the sensor
+        if(sx==x && sy==y) {
             int bx2 = sx +dx;
             int by2 = sy +dy;
             if (bx2<0 || bx2>= gridWidth || by2<0 || by2>= gridHeight) return; // box out of bounds
@@ -178,14 +183,14 @@ public class SlavaDukerani extends JPanel {
             if(tile2.type==1) {
                 // equipment destroyed, game over.
                 System.out.println("Equipment destroyed.  Game over!");
-                gameOver=true;
+                fireGameOver(false);
             }
             if(tile2.type==2) {
                 // box pushed onto exit, you win!
                 System.out.println("You win!");
-                gameOver=true;
+                fireGameOver(true);
             }
-            // move box
+            // move sensor
             sx = bx2;
             sy = by2;
             calculateSensorValues();
@@ -199,45 +204,48 @@ public class SlavaDukerani extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                // get tile at cursor position.
-                int x = e.getX()/(getWidth()/ gridWidth);
-                int y = e.getY()/(getHeight()/ gridHeight);
-                if (x<0 || x>= gridWidth ||
-                    y<0 || y>= gridHeight) return;
+            if(gameOver) return;
 
-                GridTile tile = grid[x][y];
+            // get tile at cursor position.
+            int x = e.getX()/(getWidth()/ gridWidth);
+            int y = e.getY()/(getHeight()/ gridHeight);
+            if (x<0 || x>= gridWidth ||
+                y<0 || y>= gridHeight) return;
 
-                // right click
-                if (SwingUtilities.isRightMouseButton(e)) {
-                    // on hidden tile to flag/unflag it.
-                    if (tile.hidden) {
-                        tile.flagged = !tile.flagged;
-                        fireFlagChanged();
-                        repaint();
-                    }
-                }
+            GridTile tile = grid[x][y];
 
-                // left click
-                if(SwingUtilities.isLeftMouseButton(e)){
-                    // on a hidden tile with no flag to reveal it.
-                    if(tile.hidden) {
-                        if(!tile.flagged) {
-                            clearTile(x, y);
-                        }
-                    } else {
-                        // on a revealed tile to move player there if adjacent.
-                        if((tile.x==px && Math.abs(tile.y-py)==1) ||
-                           (tile.y==py && Math.abs(tile.x-px)==1)) {
-                            movePlayer(tile.x-px, tile.y-py);
-                        }
-                    }
+            // right click
+            if (SwingUtilities.isRightMouseButton(e)) {
+                // on hidden tile to flag/unflag it.
+                if (tile.hidden) {
+                    tile.flagged = !tile.flagged;
+                    fireFlagChanged();
                     repaint();
                 }
+            }
+
+            // left click
+            if(SwingUtilities.isLeftMouseButton(e)){
+                // on a hidden tile with no flag to reveal it.
+                if(tile.hidden) {
+                    if(!tile.flagged) {
+                        clearTile(x, y);
+                    }
+                } else {
+                    // on a revealed tile to move player there if adjacent.
+                    if((tile.x==px && Math.abs(tile.y-py)==1) ||
+                       (tile.y==py && Math.abs(tile.x-px)==1)) {
+                        movePlayer(tile.x-px, tile.y-py);
+                    }
+                }
+                repaint();
+            }
             }
         });
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
+                if(gameOver) return;
                 // get tile at cursor position.
                 int x = e.getX()/(getWidth()/ gridWidth);
                 int y = e.getY()/(getHeight()/ gridHeight);
@@ -271,6 +279,20 @@ public class SlavaDukerani extends JPanel {
         }
     }
 
+    public void addGameOverListener(GameOverListener listener) {
+        listenerList.add(GameOverListener.class, listener);
+    }
+    public void removeGameOverListener(GameOverListener listener) {
+        listenerList.remove(GameOverListener.class, listener);
+    }
+
+    private void fireGameOver(boolean won) {
+        gameOver = true;
+        for (GameOverListener listener : listenerList.getListeners(GameOverListener.class)) {
+            listener.gameOver(won);
+        }
+    }
+
     private void initGame() {
         // allocate empty grid
         grid = new GridTile[gridWidth][gridHeight];
@@ -280,7 +302,7 @@ public class SlavaDukerani extends JPanel {
             }
         }
         grid[px][py].type = 0; // player start
-        grid[sx][sy].type = 3; // box start
+        grid[sx][sy].type = 3; // sensor start
         grid[gridWidth -1][gridHeight -1].type = 2; // exit
 
         grid[0][0].type = 3; // temp fill so first click isn't a mine, will be cleared later
@@ -460,7 +482,7 @@ public class SlavaDukerani extends JPanel {
         tile.hidden = false;
         if(tile.type==1) {
             System.out.println("Poked a mine.  Game over!");
-            gameOver=true;
+            fireGameOver(false);
             return;
         }
 
