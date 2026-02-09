@@ -106,6 +106,7 @@ public class SlavaDukerani extends JPanel {
     private int sx =1, sy =1;  // sensor position
     private int numMines = 30; // number of mines to place on the grid
     private boolean gameOver = false;
+    private boolean youWon = false;
     private boolean initialized=false;
     private final int sensorRange = 2; // range of the sensor
 
@@ -145,15 +146,15 @@ public class SlavaDukerani extends JPanel {
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-            if(gameOver) return;
-            int dx=0,dy=0;
-            switch(e.getKeyCode()) {
-                case KeyEvent.VK_UP: dy=-1; break;
-                case KeyEvent.VK_DOWN: dy=1; break;
-                case KeyEvent.VK_LEFT: dx=-1; break;
-                case KeyEvent.VK_RIGHT: dx=1; break;
-            }
-            movePlayer(dx, dy);
+                if(gameOver || !initialized) return;
+                int dx=0,dy=0;
+                switch(e.getKeyCode()) {
+                    case KeyEvent.VK_W, KeyEvent.VK_UP   :  dy=-1;  break;
+                    case KeyEvent.VK_S, KeyEvent.VK_DOWN :  dy= 1;  break;
+                    case KeyEvent.VK_A, KeyEvent.VK_LEFT :  dx=-1;  break;
+                    case KeyEvent.VK_D, KeyEvent.VK_RIGHT:  dx= 1;  break;
+                }
+                movePlayer(dx, dy);
             }
         });
     }
@@ -204,48 +205,48 @@ public class SlavaDukerani extends JPanel {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-            if(gameOver) return;
+                if(gameOver || !initialized) return;
 
-            // get tile at cursor position.
-            int x = e.getX()/(getWidth()/ gridWidth);
-            int y = e.getY()/(getHeight()/ gridHeight);
-            if (x<0 || x>= gridWidth ||
-                y<0 || y>= gridHeight) return;
+                // get tile at cursor position.
+                int x = e.getX()/(getWidth()/ gridWidth);
+                int y = e.getY()/(getHeight()/ gridHeight);
+                if (x<0 || x>= gridWidth ||
+                    y<0 || y>= gridHeight) return;
 
-            GridTile tile = grid[x][y];
+                GridTile tile = grid[x][y];
 
-            // right click
-            if (SwingUtilities.isRightMouseButton(e)) {
-                // on hidden tile to flag/unflag it.
-                if (tile.hidden) {
-                    tile.flagged = !tile.flagged;
-                    fireFlagChanged();
+                // right click
+                if (SwingUtilities.isRightMouseButton(e)) {
+                    // on hidden tile to flag/unflag it.
+                    if (tile.hidden) {
+                        tile.flagged = !tile.flagged;
+                        fireFlagChanged();
+                        repaint();
+                    }
+                }
+
+                // left click
+                if(SwingUtilities.isLeftMouseButton(e)){
+                    // on a hidden tile with no flag to reveal it.
+                    if(tile.hidden) {
+                        if(!tile.flagged) {
+                            clearTile(x, y);
+                        }
+                    } else {
+                        // on a revealed tile to move player there if adjacent.
+                        if((tile.x==px && Math.abs(tile.y-py)==1) ||
+                           (tile.y==py && Math.abs(tile.x-px)==1)) {
+                            movePlayer(tile.x-px, tile.y-py);
+                        }
+                    }
                     repaint();
                 }
-            }
-
-            // left click
-            if(SwingUtilities.isLeftMouseButton(e)){
-                // on a hidden tile with no flag to reveal it.
-                if(tile.hidden) {
-                    if(!tile.flagged) {
-                        clearTile(x, y);
-                    }
-                } else {
-                    // on a revealed tile to move player there if adjacent.
-                    if((tile.x==px && Math.abs(tile.y-py)==1) ||
-                       (tile.y==py && Math.abs(tile.x-px)==1)) {
-                        movePlayer(tile.x-px, tile.y-py);
-                    }
-                }
-                repaint();
-            }
             }
         });
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                if(gameOver) return;
+                if(gameOver || !initialized) return;
                 // get tile at cursor position.
                 int x = e.getX()/(getWidth()/ gridWidth);
                 int y = e.getY()/(getHeight()/ gridHeight);
@@ -288,6 +289,7 @@ public class SlavaDukerani extends JPanel {
 
     private void fireGameOver(boolean won) {
         gameOver = true;
+        youWon = won;
         for (GameOverListener listener : listenerList.getListeners(GameOverListener.class)) {
             listener.gameOver(won);
         }
@@ -382,6 +384,20 @@ public class SlavaDukerani extends JPanel {
         drawImage(g,sensorImage, sx, sy,Color.ORANGE);
         highlightHoverOver(g);
         drawSensorRange(g);
+
+        if(gameOver) {
+            // draw game over text
+            String text = youWon ? "You Win!" : "Game Over";
+            Font oldFont = g.getFont();
+            Font bold32 = oldFont.deriveFont(Font.BOLD, 64f);
+            g.setFont(bold32);
+            FontMetrics fm = g.getFontMetrics(bold32);
+            int sx = (getWidth() - fm.stringWidth(text)) / 2;
+            int sy = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+            g.setColor(youWon ? Color.BLUE : Color.RED);
+            g.drawString(text, sx, sy);
+            g.setFont(oldFont);
+        }
     }
 
     // illustrate sensor range
@@ -432,7 +448,12 @@ public class SlavaDukerani extends JPanel {
         if(tile.hidden) {
             g.setColor(Color.GRAY);
             g.fillRect(drawX, drawY, TILE_SIZE_X, TILE_SIZE_Y);
-            if(tile.flagged) {
+            if(gameOver) {
+                // if game over, show mines
+                if(tile.type==1) {
+                    drawImage(g, mineImage,x,y,Color.BLACK);
+                }
+            } else if(tile.flagged) {
                 g.setColor(Color.WHITE);
                 g.drawImage(flagImage, drawX, drawY, TILE_SIZE_X, TILE_SIZE_Y, null);
             }

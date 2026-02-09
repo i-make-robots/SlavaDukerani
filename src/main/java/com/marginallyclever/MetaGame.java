@@ -1,24 +1,19 @@
 package com.marginallyclever;
 
 import javax.swing.*;
-import javax.swing.text.NumberFormatter;
 import java.awt.*;
-import java.text.NumberFormat;
 
 /// MetaGame runs multiple instances of [SlavaDukerani] and provides a toolbar to control them.
 public class MetaGame extends JPanel implements FlagChangeListener, GameOverListener{
     private SlavaDukerani game = null;
-
+    private final MetaGameSettingsPanel settingsPanel = new MetaGameSettingsPanel(20,10,30,(int)(Math.random()*1000000));
     static final JFrame frame = new JFrame("Slava Dukerani");
-    private final JToolBar toolBar = new JToolBar();
-    private final JFormattedTextField numMinesLeft = addNumberFieldInt("Number of mines left", 0);
-    private final JFormattedTextField numMines = addNumberFieldInt("Number of mines", 30);
-    private final JFormattedTextField width = addNumberFieldInt("Width", 20);
-    private final JFormattedTextField seed = addNumberFieldInt("Map Seed", (int)(Math.random()*1000000));
-    private final JFormattedTextField height = addNumberFieldInt("Height", 10);
+    private final JMenuBar menuBar = new JMenuBar();
+    private final JFormattedTextField numMinesLeft = PanelHelper.addNumberFieldInt("Number of mines left", 0);
     private final JTextField timeDisplay = new JTextField("0:00");
-    private final JButton newGame = new JButton("New Game");
-    private final JButton resetGame = new JButton("⟳");
+    private final JMenuItem settingsButton = new JMenuItem("Settings");
+    private final JMenuItem newGame = new JMenuItem("New Game");
+    private final JMenuItem resetGame = new JMenuItem("Restart");
     private Timer timer;
     private long seconds;
 
@@ -35,33 +30,39 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
 
     public MetaGame() {
         setLayout(new BorderLayout());
-        initToolBar();
-
-        add(toolBar, BorderLayout.NORTH);
+        initMenuBar();
 
         newGame.addActionListener(e -> startNewGame());
         resetGame.addActionListener(e -> resetGame());
+        settingsButton.addActionListener(e->showSettingsDialog());
         startNewGame();
     }
 
+    private void showSettingsDialog() {
+        int result = JOptionPane.showConfirmDialog(frame, settingsPanel, "Game Settings", JOptionPane.OK_CANCEL_OPTION);
+        if(result==JOptionPane.OK_OPTION) {
+            startNewGame();
+        }
+    }
+
     private void startNewGame() {
-        seed.setText((int)(Math.random()*1000000)+"");
+        settingsPanel.newSeed();
         resetGame();
     }
 
     private void resetGame() {
-        int totalMines = Integer.parseInt(numMines.getText());
+        int totalMines = settingsPanel.getMines();
         numMinesLeft.setValue(totalMines);
         if(game!=null) {
             game.removeFlagChangeListener(this);
+            game.setRequestFocusEnabled(false);
         }
         game = new SlavaDukerani(
-                ((Number)width.getValue()).intValue(),
-                ((Number)height.getValue()).intValue(),
-                ((Number)seed.getValue()).intValue(),
-                totalMines);
+                settingsPanel.getBoardWidth(),
+                settingsPanel.getBoardHeight(),
+                settingsPanel.getSeed(),
+                settingsPanel.getMines());
         removeAll();
-        add(toolBar, BorderLayout.NORTH);
         add(game, BorderLayout.CENTER);
         frame.pack();
         frame.setLocationRelativeTo(null);
@@ -69,8 +70,31 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
 
         game.addFlagChangeListener(this);
         game.addGameOverListener(this);
+        startNewTimer();
+
+        game.setFocusable(true);
+        // set focus on the game.
+        game.setRequestFocusEnabled(true);
+        // Request focus on the EDT to ensure keyboard events go to the game component.
+        SwingUtilities.invokeLater(() -> {
+            // prefer requestFocusInWindow; if that fails, fall back to requestFocus
+            if (!game.requestFocusInWindow()) {
+                game.requestFocus();
+            }
+        });
+
+        timer.start();
+    }
+
+    private void startNewTimer() {
+        // stop any existing timer to avoid multiple timers running concurrently
+        if (timer != null) {
+            timer.stop();
+        }
         seconds = 0;
         timer = new Timer(1000, e -> {
+            System.out.println(seconds%2==0?"tick":"tock");
+            seconds++;
             long h = seconds / 3600;
             long m = (seconds % 3600) / 60;
             long s = seconds % 60;
@@ -80,60 +104,29 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
             sb.append(String.format("%02d",s));
             timeDisplay.setText(sb.toString());
         });
-        timer.start();
     }
 
-    private void initToolBar() {
-        toolBar.setFloatable(false);
-        toolBar.add(numMines);
-        toolBar.add(width);
-        toolBar.add(seed);
-        toolBar.add(height);
-        toolBar.add(newGame);
-        toolBar.add(resetGame);
-        toolBar.add(numMinesLeft);
-        toolBar.add(timeDisplay);
+    private void initMenuBar() {
+        frame.setJMenuBar(menuBar);
+        JMenu menu = new JMenu("Game");
+        menuBar.add(menu);
+        menu.add(settingsButton);
+        menu.add(newGame);
+        menu.add(resetGame);
+
+        menuBar.add(numMinesLeft);
+        menuBar.add(timeDisplay);
         numMinesLeft.setEditable(false);
-    }
-
-    static public NumberFormatter getNumberFormatterInt() {
-        NumberFormat format = NumberFormat.getIntegerInstance();
-        NumberFormatter formatter = new NumberFormatter(format);
-        //formatter.setValueClass(Integer.class);
-        formatter.setAllowsInvalid(true);
-        formatter.setCommitsOnValidEdit(true);
-        return formatter;
-    }
-
-    /**
-     * <p>A convenience method to add a number field to a panel.</p>
-     * @param toolTip the tooltip for the field
-     * @param value the initial value
-     * @return the {@link JFormattedTextField}
-     */
-    public static JFormattedTextField addNumberFieldInt(String toolTip, int value) {
-        return addNumberField(toolTip,value,getNumberFormatterInt());
-    }
-
-    /**
-     * <p>A convenience method to add a number field to a panel.</p>
-     * @param toolTip the tooltip for the field
-     * @param value the initial value
-     * @param formatter the {@link NumberFormatter} to use
-     * @return the {@link JFormattedTextField}
-     */
-    public static JFormattedTextField addNumberField(String toolTip, double value, NumberFormatter formatter) {
-        JFormattedTextField field = new JFormattedTextField(formatter);
-        field.setValue(value);
-        field.setToolTipText(toolTip);
-        field.setColumns(3);
-        field.setMinimumSize(new Dimension(0,20));
-        return field;
+        numMinesLeft.setFocusable(false);
+        timeDisplay.setEditable(false);
+        timeDisplay.setFocusable(false);
+        // timeDisplay right justified
+        timeDisplay.setHorizontalAlignment(JTextField.RIGHT);
     }
 
     @Override
     public void flagCountChanged(int flagCount) {
-        numMinesLeft.setValue(Integer.parseInt(numMines.getText()) - flagCount);
+        numMinesLeft.setValue(settingsPanel.getMines()- flagCount);
     }
 
     @Override
