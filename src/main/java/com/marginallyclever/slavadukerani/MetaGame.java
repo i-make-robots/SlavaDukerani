@@ -93,7 +93,7 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
         }
         seconds = 0;
         timer = new Timer(1000, e -> {
-            System.out.println(seconds%2==0?"tick":"tock");
+            //System.out.println(seconds%2==0?"tick":"tock");
             seconds++;
             long h = seconds / 3600;
             long m = (seconds % 3600) / 60;
