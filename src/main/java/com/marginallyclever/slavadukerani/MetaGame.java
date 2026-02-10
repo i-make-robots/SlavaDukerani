@@ -1,9 +1,9 @@
-package com.marginallyclever;
+package com.marginallyclever.slavadukerani;
 
 import javax.swing.*;
 import java.awt.*;
 
-/// MetaGame runs multiple instances of [SlavaDukerani] and provides a toolbar to control them.
+/// MetaGame runs multiple instances of [SlavaDukerani] and provides a UX to control them.
 public class MetaGame extends JPanel implements FlagChangeListener, GameOverListener{
     private SlavaDukerani game = null;
     private final MetaGameSettingsPanel settingsPanel = new MetaGameSettingsPanel(20,10,30,(int)(Math.random()*1000000));

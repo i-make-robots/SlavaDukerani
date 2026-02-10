@@ -1,10 +1,11 @@
-package com.marginallyclever;
+package com.marginallyclever.slavadukerani;
 
 import javax.swing.*;
 import javax.swing.text.NumberFormatter;
 import java.awt.*;
 import java.text.NumberFormat;
 
+/// Convenience methods for creating and configuring Swing components for the game.
 public class PanelHelper {
     static public NumberFormatter getNumberFormatterInt() {
         NumberFormat format = NumberFormat.getIntegerInstance();

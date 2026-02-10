@@ -1,4 +1,4 @@
-package com.marginallyclever;
+package com.marginallyclever.slavadukerani;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -18,10 +18,9 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-/// # Slava Dukerani
+/// Controls one "round" of the game, including the game state, rendering, and user input.
 ///
-/// Please see [README](../../../../../README.md) in this project for more details.
-///
+/// Can be embedded in a larger UX or used standalone.
 public class SlavaDukerani extends JPanel {
     public static void main( String[] args ) {
         // open a centered 800x600 window with the title "Slava Dukerani"
@@ -38,18 +37,6 @@ public class SlavaDukerani extends JPanel {
     static final int TILE_SIZE_X = 32;
     static final int TILE_SIZE_Y = 32;
 
-    public static class GridTile {
-        public int x,y;
-        public int type=0; // 0 = empty, 1 = mine, 2 = exit
-        public int sensorValue=0;
-        public boolean hidden=true;
-        public boolean flagged=false;
-
-        public GridTile(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
     private GridTile [][] grid;
     private GridTile hoverOver;  // the cursor is over this tile.
     private final EventListenerList listenerList = new EventListenerList();

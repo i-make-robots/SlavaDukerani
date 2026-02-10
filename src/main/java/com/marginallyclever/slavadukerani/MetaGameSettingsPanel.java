@@ -1,4 +1,4 @@
-package com.marginallyclever;
+package com.marginallyclever.slavadukerani;
 
 import javax.swing.*;
 import java.awt.*;
