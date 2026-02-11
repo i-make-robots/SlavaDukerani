@@ -1,7 +1,7 @@
 
 # Slava Dukerani
 
-![Slava Dukerani 1.0](image.jpg)
+![Slava Dukerani 1.0](image.png)
 
 A Minesweeper/Sokoban cross-over game where you must find and avoid mines while pushing a sensor to clear a path to the
 exit on the other side of the map. The game features procedurally generated levels, multiple difficulty settings,

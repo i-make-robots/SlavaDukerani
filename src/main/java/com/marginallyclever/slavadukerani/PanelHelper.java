@@ -10,7 +10,7 @@ public class PanelHelper {
     static public NumberFormatter getNumberFormatterInt() {
         NumberFormat format = NumberFormat.getIntegerInstance();
         NumberFormatter formatter = new NumberFormatter(format);
-        //formatter.setValueClass(Integer.class);
+        formatter.setMinimum(1);
         formatter.setAllowsInvalid(true);
         formatter.setCommitsOnValidEdit(true);
         return formatter;
