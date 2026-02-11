@@ -2,6 +2,7 @@ package com.marginallyclever.slavadukerani;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 
 /// MetaGame runs multiple instances of [SlavaDukerani] and provides a UX to control them.
 public class MetaGame extends JPanel implements FlagChangeListener, GameOverListener {
@@ -10,7 +11,7 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
     static final JFrame frame = new JFrame("Slava Dukerani");
     private final JMenuBar menuBar = new JMenuBar();
     private final JFormattedTextField numMinesLeft = PanelHelper.addNumberFieldInt("Number of mines left", 0);
-    private final JTextField timeDisplay = new JTextField("0:00");
+    private final JTextField timeDisplay = new JTextField("0");
     private final JMenuItem settingsButton = new JMenuItem("Settings");
     private final JMenuItem newGame = new JMenuItem("New Game");
     private final JMenuItem resetGame = new JMenuItem("Restart");
@@ -129,6 +130,42 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
         menu.add(settingsButton);
         menu.add(newGame);
         menu.add(resetGame);
+        menu.add(new JSeparator());
+        menu.add(new AbstractAction("Exit") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
+            }
+        });
+
+        menu = new JMenu("Help");
+        menuBar.add(menu);
+        menu.add(new AbstractAction("Website") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new java.net.URI("https://github.com/i-make-robots/SlavaDukerani/"));
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        menu.add(new AbstractAction("About") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JOptionPane.showMessageDialog(frame,
+                        "Slava Dukerani\n" +
+                                "A Minesweeper/Sokoban crossover event\n"+
+                                "by Marginally Clever Software\n" +
+                                "https://github.com/i-make-robots/SlavaDukerani/\n\n"+
+                                "WASD/Arrow keys to move and push your sensor equipment.\n" +
+                                "Q/Mouse left click to reveal hidden tiles.\n" +
+                                "E/Mouse right click to flag/unflag mines.\n" +
+                                "Reach the bottom right corner to win."
+                        );
+
+            }
+        });
 
         menuBar.add(numMinesLeft);
         menuBar.add(timeDisplay);
