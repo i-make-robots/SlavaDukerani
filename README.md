@@ -1,7 +1,7 @@
 
 # Slava Dukerani
 
-![Slava Dukerani](image.jpg)
+![Slava Dukerani 1.0](image.jpg)
 
 A Minesweeper/Sokoban cross-over game where you must find and avoid mines while pushing a sensor to clear a path to the
 exit on the other side of the map. The game features procedurally generated levels, multiple difficulty settings,
@@ -20,32 +20,32 @@ to Minesweeper. This information can be used to deduce the location of mines and
 
 Players can also flag squares they believe contain mines, which can help them keep track of potential dangers.
 
+## Controls
+
+- WASD/Arrow keys to move Duke.
+- Q/Left click to reveal a tile.
+- E/Right click to toggle a flag on a tile.
+
+Sometimes if you clear an empty tile it will also clear adjacent empty tiles, just like Minesweeper.
+
+White tiles are empty.  If they have a number on them, that number indicates how many mines are adjacent to that
+tile, including diagonals.  Left click on a tile adjacent to Duke to move Duke there.  You can only move to tiles
+that are cardinally adjacent to Duke, not diagonally.  If you move into
+the sensor tile it will attempt to push the sensor in the same direction.
+
+Players can also move Duke with the keyboard using W/A/S/D or the arrow keys.
+
 ## Winning and Losing
 
 The player wins when Duke or the sensors stands on the exit tile.  The player loses if Duke steps on a mine, if the
 sensor is pushed onto a mine, or if a mine is revealed by clicking on it.  The player can also lose by getting
 themselves trapped in a corner with no way to move without stepping on a mine, or by getting the sensor stuck.
 
-## Controls
-
-Hover the mouse over the game tiles.
-
-Dark gray tiles are hidden.  They might have a mine.  Right click to toggle a flag on them to help you remember
-where you think mines are.  Left click to reveal an unflagged hidden tile.  If you reveal a mine, it's game over.
-Sometimes if you clear an empty tile it will also clear adjacent empty tiles, just like Minesweeper.
-
-White tiles are empty.  If they have a number on them, that number indicates how many mines are adjacent to that
-tile, including diagonals.  Left click on a tile adjacent to Duke to move Duke there.  You can only move to tiles
-that are cardinally adjacent to Duke, not diagonally.  If you move onto a mine, it's game over.  If you move into
-the sensor tile it will attempt to push the sensor in the same direction.
-
-Players can also move Duke with the keyboard using W/A/S/D or the arrow keys.
-
 ## Display
 
-The `Game > Settings` menu has options to adjust the size, difficulty, and random seed of the generated levels.
-
-The `Game > New Game` menu option starts a new game.
+- `Game > Settings` menu has options to adjust the size, difficulty, and random seed of the generated levels.
+- `Game > New Game` menu option starts a new game.
+- `Game > Restart` repeats the current game.
 
 The main menu bar also displays remaining flags and elapsed time.
 
