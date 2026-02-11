@@ -145,7 +145,6 @@ public class SlavaDukerani extends JPanel {
             // move sensor
             sx = bx2;
             sy = by2;
-            calculateSensorValues();
         }
         px = x;
         py = y;
@@ -271,31 +270,32 @@ public class SlavaDukerani extends JPanel {
 
         calculateSensorValues();
         clearTile(px,py);
-        clearTile(sx, sy);
+        clearTile(sx,sy);
     }
 
-    // update all sensor values.
+    /// Calculate the sensor values for all tiles based on the current mine placement.  Called after placing mines.
     private void calculateSensorValues() {
         for (int x = 0; x< gridWidth; x++) {
             for (int y = 0; y< gridHeight; y++) {
-                grid[x][y].sensorValue = calculateSensorValue(x,y);
+                if(grid[x][y].type == 1) {
+                    updateAdjacentSensorValues(x,y);
+                }
             }
         }
     }
 
-    private int calculateSensorValue(int x, int y) {
-        int count = 0;
+    /// Raise the sensor value of all tiles adjacent to the given coordinates.  Called when placing mines.
+    private void updateAdjacentSensorValues(int x, int y) {
         for (int dx=-1;dx<=1;dx++) {
             for (int dy=-1;dy<=1;dy++) {
                 if(dx==0 && dy==0) continue;
                 int nx = x+dx;
                 int ny = y+dy;
                 if (nx>=0 && nx< gridWidth && ny>=0 && ny< gridHeight) {
-                    if(grid[nx][ny].type == 1) count++;
+                    grid[nx][ny].sensorValue++;
                 }
             }
         }
-        return count;
     }
 
     private void placeMines() {
@@ -452,33 +452,58 @@ public class SlavaDukerani extends JPanel {
     private void clearTile(int x, int y) {
         GridTile tile = grid[x][y];
         tile.hidden = false;
-        if(tile.type==1) {
+        if (tile.type == 1) {
             System.out.println("Poked a mine.  Game over!");
             fireGameOver(false);
             return;
         }
 
-        if(tile.sensorValue>0) return;
-        // repeat in adjacent hidden unflagged tiles.
-        for(int dx=-1;dx<=1;dx++) {
-            for(int dy=-1;dy<=1;dy++) {
-                int nx = x+dx;
-                int ny = y+dy;
-                if (nx>=0 && nx< gridWidth && ny>=0 && ny< gridHeight) {
-                    GridTile adjacentTile = grid[nx][ny];
-                    if(adjacentTile.hidden && !adjacentTile.flagged) {
-                        clearTile(nx, ny);
+        if (tile.sensorValue > 0) return;
+
+        System.out.println("Revealing...");
+        revealAdjacentTiles(tile);
+        System.out.println("Done");
+    }
+
+    /// Recursively visit all adjacent hidden tiles with sensorValue=0 and reveal them until reaching tiles with
+    /// sensorValue>0.  Called when clearing a tile with sensorValue=0.
+    private void revealAdjacentTiles(GridTile startTile) {
+        // use a queue to avoid stack overflow from recursion, and a visited set to avoid infinite loops.
+        Queue<GridTile> toVisit = new LinkedList<>();
+        boolean [][] visited = new boolean [gridWidth][gridHeight];
+        toVisit.add(startTile);
+
+        while(!toVisit.isEmpty()) {
+            var tile = toVisit.poll();
+            visited[startTile.x][startTile.y] = true;
+            tile.hidden = false;
+            if (tile.sensorValue > 0) continue;
+
+            // queue new adjacent hidden unflagged tiles.
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    int nx = tile.x + dx;
+                    int ny = tile.y + dy;
+                    if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight) {
+                        GridTile adjacentTile = grid[nx][ny];
+                        // seen or in queue already, skip
+                        if(visited[adjacentTile.x][adjacentTile.y] || toVisit.contains(adjacentTile)) continue;
+                        // not hidden or flagged, skip
+                        if(!adjacentTile.hidden || adjacentTile.flagged) continue;
+                        // do it!
+                        toVisit.add(adjacentTile);
                     }
                 }
             }
         }
     }
 
-    // replace initArt() with:
+    // load artwork from resources.  Called once on the first frame.
     private void initArt() throws IOException {
+        // load all Duke images from the "dukes" folder in resources and pick one at random for the player image.
         try {
             String packagePath = getClass().getPackage().getName().replace('.', '/');
-            java.util.List<String> pngs = listPngResources(packagePath+"/dukes"); // folder inside src/main/resources
+            List<String> pngs = listPngResources(packagePath+"/dukes"); // folder inside src/main/resources
             if (pngs.isEmpty()) {
                 System.err.println("No PNGs found.");
                 return;
@@ -503,7 +528,7 @@ public class SlavaDukerani extends JPanel {
     }
 
     // helper to list pngs from a resource folder (handles both file and jar)
-    private java.util.List<String> listPngResources(String resourceFolder) throws IOException, URISyntaxException {
+    private List<String> listPngResources(String resourceFolder) throws IOException, URISyntaxException {
         List<String> result = new ArrayList<>();
         ClassLoader cl = getClass().getClassLoader();
         URL dirURL = cl.getResource(resourceFolder);

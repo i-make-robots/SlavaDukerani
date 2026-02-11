@@ -4,7 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /// MetaGame runs multiple instances of [SlavaDukerani] and provides a UX to control them.
-public class MetaGame extends JPanel implements FlagChangeListener, GameOverListener{
+public class MetaGame extends JPanel implements FlagChangeListener, GameOverListener {
     private SlavaDukerani game = null;
     private final MetaGameSettingsPanel settingsPanel = new MetaGameSettingsPanel(20,10,30,(int)(Math.random()*1000000));
     static final JFrame frame = new JFrame("Slava Dukerani");
@@ -63,7 +63,10 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
                 settingsPanel.getSeed(),
                 settingsPanel.getMines());
         removeAll();
-        add(game, BorderLayout.CENTER);
+        var pane = new JScrollPane(game);
+        Dimension max = getSingleScreenSize(0.9f);
+        pane.setMaximumSize(max);
+        add(pane, BorderLayout.CENTER);
         frame.pack();
         frame.setLocationRelativeTo(null);
         revalidate();
@@ -84,6 +87,19 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
         });
 
         timer.start();
+    }
+
+    private Dimension getSingleScreenSize(float scale) {
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice[] devices = ge.getScreenDevices();
+        if (devices.length > 0) {
+            DisplayMode dm = devices[0].getDisplayMode();
+            return new Dimension(
+                    (int)(dm.getWidth()*scale),
+                    (int)(dm.getHeight()*scale));
+        }
+        // fallback to a default size if no screens are detected
+        return new Dimension(800, 600);
     }
 
     private void startNewTimer() {
