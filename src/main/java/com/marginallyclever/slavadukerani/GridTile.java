@@ -3,8 +3,13 @@ package com.marginallyclever.slavadukerani;
 /// A single tile of the game board. Contains the tile's coordinates, type (empty, mine, or exit), sensor value, and
 /// whether it's hidden or flagged.
 public class GridTile {
+    public static final int TYPE_EMPTY = 0;
+    public static final int TYPE_MINE = 1;
+    public static final int TYPE_EXIT = 2;
+    public static final int TYPE_RESERVED = 3;
+
     public int x, y;
-    public int type = 0; // 0 = empty, 1 = mine, 2 = exit
+    public int type = TYPE_EMPTY;
     public int sensorValue = 0;
     public boolean hidden = true;
     public boolean flagged = false;
