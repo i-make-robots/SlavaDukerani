@@ -104,6 +104,10 @@ public class SlavaDukerani extends JPanel {
                     case KeyEvent.VK_S, KeyEvent.VK_DOWN :  dy= 1;  break;
                     case KeyEvent.VK_A, KeyEvent.VK_LEFT :  dx=-1;  break;
                     case KeyEvent.VK_D, KeyEvent.VK_RIGHT:  dx= 1;  break;
+                    // key events for users with one-button mice or who prefer keyboard controls.
+                    case KeyEvent.VK_Q                   :  clickEvent(true,false);  return; // left click
+                    case KeyEvent.VK_E                   :  clickEvent(false,true);  return; // right click
+                    default: return; // ignore other keys
                 }
                 movePlayer(dx, dy);
             }
@@ -117,11 +121,15 @@ public class SlavaDukerani extends JPanel {
         if (x<0 || x>= gridWidth || y<0 || y>= gridHeight) return;
         // check for mine
         var tile = grid[x][y];
-        if(tile.type == 1) {
+
+        // walking into an unknown tile reveals that tile.
+        if(tile.hidden) clearTile(tile.x,tile.y);
+
+        if(tile.type == GridTile.TYPE_MINE) {
             // you died, game over
             System.out.println("You died.  Game over!");
             fireGameOver(false);
-        } else if(tile.type==2) {
+        } else if(tile.type == GridTile.TYPE_EXIT) {
             // you win!
             System.out.println("You win!");
             fireGameOver(true);
@@ -132,12 +140,12 @@ public class SlavaDukerani extends JPanel {
             int by2 = sy +dy;
             if (bx2<0 || bx2>= gridWidth || by2<0 || by2>= gridHeight) return; // box out of bounds
             var tile2 = grid[bx2][by2];
-            if(tile2.type==1) {
+            if(tile2.type == GridTile.TYPE_MINE) {
                 // equipment destroyed, game over.
                 System.out.println("Equipment destroyed.  Game over!");
                 fireGameOver(false);
             }
-            if(tile2.type==2) {
+            if(tile2.type == GridTile.TYPE_EXIT) {
                 // box pushed onto exit, you win!
                 System.out.println("You win!");
                 fireGameOver(true);
@@ -154,48 +162,16 @@ public class SlavaDukerani extends JPanel {
     private void attachMouseListeners() {
         addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                if(gameOver || !initialized) return;
-
-                // get tile at cursor position.
-                int x = e.getX()/(getWidth()/ gridWidth);
-                int y = e.getY()/(getHeight()/ gridHeight);
-                if (x<0 || x>= gridWidth ||
-                    y<0 || y>= gridHeight) return;
-
-                GridTile tile = grid[x][y];
-
-                // right click
-                if (SwingUtilities.isRightMouseButton(e)) {
-                    // on hidden tile to flag/unflag it.
-                    if (tile.hidden) {
-                        tile.flagged = !tile.flagged;
-                        fireFlagChanged();
-                        repaint();
-                    }
-                }
-
-                // left click
-                if(SwingUtilities.isLeftMouseButton(e)){
-                    // on a hidden tile with no flag to reveal it.
-                    if(tile.hidden) {
-                        if(!tile.flagged) {
-                            clearTile(x, y);
-                        }
-                    } else {
-                        // on a revealed tile to move player there if adjacent.
-                        if((tile.x==px && Math.abs(tile.y-py)==1) ||
-                           (tile.y==py && Math.abs(tile.x-px)==1)) {
-                            movePlayer(tile.x-px, tile.y-py);
-                        }
-                    }
-                    repaint();
-                }
+            public void mouseReleased(MouseEvent e) {
+                boolean isRight = SwingUtilities.isRightMouseButton(e);
+                boolean isLeft = SwingUtilities.isLeftMouseButton(e);
+                clickEvent(isLeft,isRight);
             }
         });
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
+                hoverOver = null;
                 if(gameOver || !initialized) return;
                 // get tile at cursor position.
                 int x = e.getX()/(getWidth()/ gridWidth);
@@ -207,6 +183,42 @@ public class SlavaDukerani extends JPanel {
                 repaint();
             }
         });
+    }
+
+    private void clickEvent(boolean isLeft, boolean isRight) {
+        if(gameOver || !initialized) return;
+        // get tile at cursor position.
+        if (hoverOver==null) return;
+        int mouseX = hoverOver.x;
+        int mouseY = hoverOver.y;
+        GridTile tile = grid[mouseX][mouseY];
+
+        // right click
+        if(isRight) {
+            // on hidden tile to flag/unflag it.
+            if (tile.hidden) {
+                tile.flagged = !tile.flagged;
+                fireFlagChanged();
+                repaint();
+            }
+        }
+
+        // left click
+        if(isLeft) {
+            // on a hidden tile with no flag to reveal it.
+            if (tile.hidden) {
+                if (!tile.flagged) {
+                    clearTile(mouseX, mouseY);
+                }
+            } else {
+                // on a revealed tile to move player there if adjacent.
+                if ((tile.x == px && Math.abs(tile.y - py) == 1) ||
+                    (tile.y == py && Math.abs(tile.x - px) == 1)) {
+                    movePlayer(tile.x - px, tile.y - py);
+                }
+            }
+            repaint();
+        }
     }
 
     public void addFlagChangeListener(FlagChangeListener listener) {
@@ -253,20 +265,18 @@ public class SlavaDukerani extends JPanel {
                 grid[x][y] = new GridTile(x,y);
             }
         }
-        grid[px][py].type = 0; // player start
-        grid[sx][sy].type = 3; // sensor start
         grid[gridWidth -1][gridHeight -1].type = 2; // exit
 
-        grid[0][0].type = 3; // temp fill so first click isn't a mine, will be cleared later
-        grid[0][1].type = 3; // temp fill so first click isn't a mine, will be cleared later
-        grid[1][0].type = 3; // temp fill so first click isn't a mine, will be cleared later
+        grid[0][0].type = GridTile.TYPE_RESERVED; // temp fill so first click isn't a mine, will be cleared later
+        grid[0][1].type = GridTile.TYPE_RESERVED; // temp fill so first click isn't a mine, will be cleared later
+        grid[1][0].type = GridTile.TYPE_RESERVED; // temp fill so first click isn't a mine, will be cleared later
 
         // add some mines
         placeMines();
 
-        grid[0][0].type = 0; // clear
-        grid[0][1].type = 0; // clear
-        grid[1][0].type = 0; // clear
+        grid[0][0].type = GridTile.TYPE_EMPTY; // clear
+        grid[0][1].type = GridTile.TYPE_EMPTY; // clear
+        grid[1][0].type = GridTile.TYPE_EMPTY; // clear
 
         calculateSensorValues();
         clearTile(px,py);
@@ -392,8 +402,8 @@ public class SlavaDukerani extends JPanel {
 
     private void drawOneTile(Graphics g, int x, int y) {
         GridTile tile = grid[x][y];
-        int drawX = x* TILE_SIZE_X;
-        int drawY = y* TILE_SIZE_Y;
+        int drawX = x * TILE_SIZE_X;
+        int drawY = y * TILE_SIZE_Y;
 
         // draw hidden tile
         if(tile.hidden) {
@@ -411,7 +421,7 @@ public class SlavaDukerani extends JPanel {
         } else {
             // draw revealed tile
             switch (tile.type) {
-                case 0: // empty
+                case GridTile.TYPE_EMPTY:
                     g.setColor(Color.WHITE);
                     g.fillRect(drawX, drawY, TILE_SIZE_X, TILE_SIZE_Y);
                     if (tile.sensorValue > 0) {
@@ -421,10 +431,10 @@ public class SlavaDukerani extends JPanel {
                         }
                     }
                     break;
-                case 1: // mine
+                case GridTile.TYPE_MINE:
                     drawImage(g, mineImage,x,y,Color.BLACK);
                     break;
-                case 2: // exit
+                case GridTile.TYPE_EXIT:
                     drawImage(g, exitImage,x,y,Color.GREEN);
                     break;
             }
