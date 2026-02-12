@@ -34,16 +34,9 @@ public class SlavaDukerani extends JPanel {
         frame.setVisible(true);
     }
 
-    static final int TILE_SIZE_X = 32;
-    static final int TILE_SIZE_Y = 32;
-
-    private GridTile [][] grid;
+    private final Grid grid;
     private GridTile hoverOver;  // the cursor is over this tile.
     private final EventListenerList listenerList = new EventListenerList();
-    private final Random rand;
-
-    private int gridWidth = 20;
-    private int gridHeight = 10;  // grid width and height
 
     // add field
     private BufferedImage playerImage,
@@ -53,12 +46,11 @@ public class SlavaDukerani extends JPanel {
             exitImage;
 
 
-    private int px=0,py=0;  // player position
-    private int sx =1, sy =1;  // sensor position
-    private int numMines = 30; // number of mines to place on the grid
+    private int px = 0, py = 0;  // player position
+    private int sx = 1, sy = 1;  // sensor position
     private boolean gameOver = false;
     private boolean youWon = false;
-    private boolean initialized=false;
+    private boolean initialized = false;
     private final int sensorRange = 2; // range of the sensor
 
 
@@ -69,17 +61,21 @@ public class SlavaDukerani extends JPanel {
     /// @param numMines   Number of mines to place on the grid.
     public SlavaDukerani(int gridWidth, int gridHeight,int seed,int numMines) {
         super(new BorderLayout(5, 5));
+        grid = new Grid(gridWidth, gridHeight, seed, numMines);
+        getReady();
+    }
 
-        this.gridWidth = gridWidth;
-        this.gridHeight = gridHeight;
-        this.numMines = numMines;
+    public SlavaDukerani(String gridString) {
+        super(new BorderLayout(5, 5));
+        grid = new Grid(gridString);
+        getReady();
+    }
 
-        rand = new Random(seed);
-
-        setSize(this.gridWidth *TILE_SIZE_X, this.gridHeight * TILE_SIZE_Y);
-        setMinimumSize  (new Dimension(this.gridWidth * TILE_SIZE_X, this.gridHeight * TILE_SIZE_Y));
-        setPreferredSize(new Dimension(this.gridWidth * TILE_SIZE_X, this.gridHeight * TILE_SIZE_Y));
-        setMaximumSize  (new Dimension(this.gridWidth * TILE_SIZE_X, this.gridHeight * TILE_SIZE_Y));
+    private void getReady() {
+        setSize(grid.getGridWidth() * GridTile.SIZE_X, grid.getGridHeight() * GridTile.SIZE_Y);
+        setMinimumSize  (new Dimension(grid.getGridWidth() * GridTile.SIZE_X, grid.getGridHeight() * GridTile.SIZE_Y));
+        setPreferredSize(new Dimension(grid.getGridWidth() * GridTile.SIZE_X, grid.getGridHeight() * GridTile.SIZE_Y));
+        setMaximumSize  (new Dimension(grid.getGridWidth() * GridTile.SIZE_X, grid.getGridHeight() * GridTile.SIZE_Y));
 
         attachMouseListeners();
         attachKeyboardListeners();
@@ -118,12 +114,16 @@ public class SlavaDukerani extends JPanel {
         int x = px+dx;
         int y = py+dy;
         // check bounds
-        if (x<0 || x>= gridWidth || y<0 || y>= gridHeight) return;
+        if (x<0 || x>= grid.getGridWidth() || y<0 || y>= grid.getGridHeight()) return;
         // check for mine
-        var tile = grid[x][y];
+        var tile = grid.getTile(x,y);
 
         // walking into an unknown tile reveals that tile.
-        if(tile.hidden) clearTile(tile.x,tile.y);
+        if(tile.hidden) {
+            if(grid.revealTile(tile.x,tile.y)) {
+                fireGameOver(false);
+            }
+        }
 
         if(tile.type == GridTile.TYPE_MINE) {
             // you died, game over
@@ -138,8 +138,8 @@ public class SlavaDukerani extends JPanel {
         if(sx==x && sy==y) {
             int bx2 = sx +dx;
             int by2 = sy +dy;
-            if (bx2<0 || bx2>= gridWidth || by2<0 || by2>= gridHeight) return; // box out of bounds
-            var tile2 = grid[bx2][by2];
+            if (bx2<0 || bx2>= grid.getGridWidth() || by2<0 || by2>= grid.getGridHeight()) return; // box out of bounds
+            var tile2 = grid.getTile(bx2,by2);
             if(tile2.type == GridTile.TYPE_MINE) {
                 // equipment destroyed, game over.
                 System.out.println("Equipment destroyed.  Game over!");
@@ -161,11 +161,26 @@ public class SlavaDukerani extends JPanel {
 
     private void attachMouseListeners() {
         addMouseListener(new MouseAdapter() {
+            boolean leftDown = false;
+            boolean rightDown = false;
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                boolean isLeft = SwingUtilities.isLeftMouseButton(e);
+                boolean isRight = SwingUtilities.isRightMouseButton(e);
+                if(isLeft) leftDown=true;
+                if(isRight) rightDown=true;
+                System.out.println("Mouse pressed at: " + e.getX() + "," + e.getY()+"  Left: "+leftDown+"  Right: "+rightDown);
+                clickEvent(leftDown,rightDown);
+            }
+
             @Override
             public void mouseReleased(MouseEvent e) {
-                boolean isRight = SwingUtilities.isRightMouseButton(e);
                 boolean isLeft = SwingUtilities.isLeftMouseButton(e);
-                clickEvent(isLeft,isRight);
+                boolean isRight = SwingUtilities.isRightMouseButton(e);
+                if(isLeft) leftDown=false;
+                if(isRight) rightDown=false;
+                super.mouseReleased(e);
             }
         });
         addMouseMotionListener(new MouseMotionAdapter() {
@@ -174,12 +189,12 @@ public class SlavaDukerani extends JPanel {
                 hoverOver = null;
                 if(gameOver || !initialized) return;
                 // get tile at cursor position.
-                int x = e.getX()/(getWidth()/ gridWidth);
-                int y = e.getY()/(getHeight()/ gridHeight);
-                if (x<0 || x>= gridWidth ||
-                    y<0 || y>= gridHeight) return;
+                int x = e.getX()/(getWidth()/ grid.getGridWidth());
+                int y = e.getY()/(getHeight()/ grid.getGridHeight());
+                if (x<0 || x>= grid.getGridWidth() ||
+                    y<0 || y>= grid.getGridHeight()) return;
                 // show sensor value in title bar
-                hoverOver = grid[x][y];
+                hoverOver = grid.getTile(x,y);
                 repaint();
             }
         });
@@ -191,7 +206,7 @@ public class SlavaDukerani extends JPanel {
         if (hoverOver==null) return;
         int mouseX = hoverOver.x;
         int mouseY = hoverOver.y;
-        GridTile tile = grid[mouseX][mouseY];
+        GridTile tile = grid.getTile(mouseX,mouseY);
 
         // right click
         if(isRight) {
@@ -208,7 +223,9 @@ public class SlavaDukerani extends JPanel {
             // on a hidden tile with no flag to reveal it.
             if (tile.hidden) {
                 if (!tile.flagged) {
-                    clearTile(mouseX, mouseY);
+                    if(grid.revealTile(mouseX, mouseY)) {
+                        fireGameOver(false);
+                    }
                 }
             } else {
                 // on a revealed tile to move player there if adjacent.
@@ -218,6 +235,41 @@ public class SlavaDukerani extends JPanel {
                 }
             }
             repaint();
+        }
+
+        if(isLeft && isRight) {
+            // "chording", aka the double-click technique where you click both buttons on a revealed tile
+            // to reveal all adjacent hidden tiles if the number of adjacent flags equals the sensor value.
+            doChord(tile);
+        }
+    }
+
+    private void doChord(GridTile tile) {
+        if(!tile.hidden && tile.sensorValue > 0) {
+            int adjacentFlags = 0;
+            List<GridTile> adjacentHidden = new ArrayList<>();
+            for(int dx=-1; dx<=1; dx++) {
+                for(int dy=-1; dy<=1; dy++) {
+                    if(dx==0 && dy==0) continue;
+                    int ax = tile.x + dx;
+                    int ay = tile.y + dy;
+                    if (ax<0 || ax>= grid.getGridWidth() || ay<0 || ay>= grid.getGridHeight()) continue;
+                    var t = grid.getTile(ax,ay);
+                    if(t.flagged) adjacentFlags++;
+                    if(t.hidden) adjacentHidden.add(t);
+                }
+            }
+            if(adjacentFlags == tile.sensorValue) {
+                boolean failed = false;
+                for(var t : adjacentHidden) {
+                    if(!t.flagged) {
+                        failed |= grid.revealTile(t.x, t.y);
+                    }
+                }
+                if(failed) {
+                    fireGameOver(false);
+                }
+            }
         }
     }
 
@@ -230,9 +282,9 @@ public class SlavaDukerani extends JPanel {
 
     private void fireFlagChanged() {
         int numFlags = 0;
-        for (int x = 0; x< gridWidth; x++) {
-            for (int y = 0; y< gridHeight; y++) {
-                if(grid[x][y].flagged) numFlags++;
+        for (int x = 0; x< grid.getGridWidth(); x++) {
+            for (int y = 0; y< grid.getGridHeight(); y++) {
+                if(grid.getTile(x,y).flagged) numFlags++;
             }
         }
 
@@ -258,66 +310,6 @@ public class SlavaDukerani extends JPanel {
     }
 
     private void initGame() {
-        // allocate empty grid
-        grid = new GridTile[gridWidth][gridHeight];
-        for (int x = 0; x< gridWidth; x++) {
-            for (int y = 0; y< gridHeight; y++) {
-                grid[x][y] = new GridTile(x,y);
-            }
-        }
-        grid[gridWidth -1][gridHeight -1].type = 2; // exit
-
-        grid[0][0].type = GridTile.TYPE_RESERVED; // temp fill so first click isn't a mine, will be cleared later
-        grid[0][1].type = GridTile.TYPE_RESERVED; // temp fill so first click isn't a mine, will be cleared later
-        grid[1][0].type = GridTile.TYPE_RESERVED; // temp fill so first click isn't a mine, will be cleared later
-
-        // add some mines
-        placeMines();
-
-        grid[0][0].type = GridTile.TYPE_EMPTY; // clear
-        grid[0][1].type = GridTile.TYPE_EMPTY; // clear
-        grid[1][0].type = GridTile.TYPE_EMPTY; // clear
-
-        calculateSensorValues();
-        clearTile(px,py);
-        clearTile(sx,sy);
-    }
-
-    /// Calculate the sensor values for all tiles based on the current mine placement.  Called after placing mines.
-    private void calculateSensorValues() {
-        for (int x = 0; x< gridWidth; x++) {
-            for (int y = 0; y< gridHeight; y++) {
-                if(grid[x][y].type == 1) {
-                    updateAdjacentSensorValues(x,y);
-                }
-            }
-        }
-    }
-
-    /// Raise the sensor value of all tiles adjacent to the given coordinates.  Called when placing mines.
-    private void updateAdjacentSensorValues(int x, int y) {
-        for (int dx=-1;dx<=1;dx++) {
-            for (int dy=-1;dy<=1;dy++) {
-                if(dx==0 && dy==0) continue;
-                int nx = x+dx;
-                int ny = y+dy;
-                if (nx>=0 && nx< gridWidth && ny>=0 && ny< gridHeight) {
-                    grid[nx][ny].sensorValue++;
-                }
-            }
-        }
-    }
-
-    private void placeMines() {
-        int placed=0;
-        while(placed<numMines) {
-            int x = (int)(rand.nextDouble() * gridWidth);
-            int y = (int)(rand.nextDouble() * gridHeight);
-            if(grid[x][y].type==0) {
-                grid[x][y].type = 1;
-                placed++;
-            }
-        }
     }
 
     @Override
@@ -335,8 +327,8 @@ public class SlavaDukerani extends JPanel {
         }
 
         // draw all tiles
-        for(int x = 0; x< gridWidth; ++x) {
-            for(int y = 0; y< gridHeight; ++y) {
+        for(int x = 0; x< grid.getGridWidth(); ++x) {
+            for(int y = 0; y< grid.getGridHeight(); ++y) {
                 drawOneTile(g,x,y);
             }
         }
@@ -364,19 +356,33 @@ public class SlavaDukerani extends JPanel {
     // illustrate sensor range
     private void drawSensorRange(Graphics g) {
         g.setColor(new Color(255, 165, 0, 32)); // semi-transparent orange
-        int sensorDrawX = (sx -sensorRange)* TILE_SIZE_X;
-        int sensorDrawY = (sy -sensorRange)* TILE_SIZE_Y;
-        int sensorDrawSizeX = (sensorRange*2+1)* TILE_SIZE_X;
-        int sensorDrawSizeY = (sensorRange*2+1)* TILE_SIZE_Y;
+        int sensorDrawX = (sx -sensorRange)* GridTile.SIZE_X;
+        int sensorDrawY = (sy -sensorRange)* GridTile.SIZE_Y;
+        int sensorDrawSizeX = (sensorRange*2+1)* GridTile.SIZE_X;
+        int sensorDrawSizeY = (sensorRange*2+1)* GridTile.SIZE_Y;
         g.fillRect(sensorDrawX, sensorDrawY, sensorDrawSizeX, sensorDrawSizeY);
+
+        for(int x=0; x< grid.getGridWidth(); x++) {
+            for(int y=0; y< grid.getGridHeight(); y++) {
+                var tile = grid.getTile(x,y);
+                if (tile.sensorValue > 0 && !tile.hidden) {
+                    // if bx/by is within sensorRange of this tile, show sensor value
+                    if(Math.abs(tile.x- sx) <= sensorRange && Math.abs(tile.y- sy) <= sensorRange) {
+                        var drawX = tile.x * GridTile.SIZE_X;
+                        var drawY = tile.y * GridTile.SIZE_Y;
+                        drawSensorValue(g,drawX,drawY,tile.sensorValue);
+                    }
+                }
+            }
+        }
     }
 
     // highlight if hover over
     private void highlightHoverOver(Graphics g) {
         if(hoverOver==null) return;
 
-        int drawX = hoverOver.x* TILE_SIZE_X;
-        int drawY = hoverOver.y* TILE_SIZE_Y;
+        int drawX = hoverOver.x* GridTile.SIZE_X;
+        int drawY = hoverOver.y* GridTile.SIZE_Y;
         // if hoverOver is cardinal with and adjacent to the player, highlight in green, otherwise yellow.
         if((hoverOver.x==px && Math.abs(hoverOver.y-py)==1) ||
            (hoverOver.y==py && Math.abs(hoverOver.x-px)==1)) {
@@ -386,29 +392,29 @@ public class SlavaDukerani extends JPanel {
         }
         Graphics2D g2d = (Graphics2D) g;
         g2d.setStroke(new BasicStroke(2));
-        g2d.drawRect(drawX, drawY, TILE_SIZE_X, TILE_SIZE_Y);
+        g2d.drawRect(drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y);
     }
 
     private void drawImage(Graphics g, BufferedImage img, int x, int y,Color fallbackColor) {
-        int dx = x * TILE_SIZE_X;
-        int dy = y * TILE_SIZE_Y;
+        int dx = x * GridTile.SIZE_X;
+        int dy = y * GridTile.SIZE_Y;
         if (img != null) {
-            g.drawImage(img, dx, dy, TILE_SIZE_X, TILE_SIZE_Y, null);
+            g.drawImage(img, dx, dy, GridTile.SIZE_X, GridTile.SIZE_Y, null);
         } else {
             g.setColor(fallbackColor);
-            g.fillRect(dx, dy, TILE_SIZE_X, TILE_SIZE_Y);
+            g.fillRect(dx, dy, GridTile.SIZE_X, GridTile.SIZE_Y);
         }
     }
 
     private void drawOneTile(Graphics g, int x, int y) {
-        GridTile tile = grid[x][y];
-        int drawX = x * TILE_SIZE_X;
-        int drawY = y * TILE_SIZE_Y;
+        GridTile tile = grid.getTile(x,y);
+        int drawX = x * GridTile.SIZE_X;
+        int drawY = y * GridTile.SIZE_Y;
 
         // draw hidden tile
         if(tile.hidden) {
             g.setColor(Color.GRAY);
-            g.fillRect(drawX, drawY, TILE_SIZE_X, TILE_SIZE_Y);
+            g.fillRect(drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y);
             if(gameOver) {
                 // if game over, show mines
                 if(tile.type==1) {
@@ -416,20 +422,14 @@ public class SlavaDukerani extends JPanel {
                 }
             } else if(tile.flagged) {
                 g.setColor(Color.WHITE);
-                g.drawImage(flagImage, drawX, drawY, TILE_SIZE_X, TILE_SIZE_Y, null);
+                g.drawImage(flagImage, drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y, null);
             }
         } else {
             // draw revealed tile
             switch (tile.type) {
                 case GridTile.TYPE_EMPTY:
                     g.setColor(Color.WHITE);
-                    g.fillRect(drawX, drawY, TILE_SIZE_X, TILE_SIZE_Y);
-                    if (tile.sensorValue > 0) {
-                        // if bx/by is within sensorRange of this tile, show sensor value
-                        if(Math.abs(tile.x- sx) <= sensorRange && Math.abs(tile.y- sy) <= sensorRange) {
-                            drawSensorValue(g,drawX,drawY,tile.sensorValue);
-                        }
-                    }
+                    g.fillRect(drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y);
                     break;
                 case GridTile.TYPE_MINE:
                     drawImage(g, mineImage,x,y,Color.BLACK);
@@ -441,7 +441,7 @@ public class SlavaDukerani extends JPanel {
         }
         // draw tile border
         g.setColor(Color.DARK_GRAY);
-        g.drawRect(drawX, drawY, TILE_SIZE_X, TILE_SIZE_Y);
+        g.drawRect(drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y);
     }
 
     private void drawSensorValue(Graphics g, int drawX, int drawY, int sensorValue) {
@@ -451,61 +451,11 @@ public class SlavaDukerani extends JPanel {
         g.setFont(bold16);
         FontMetrics fm = g.getFontMetrics(bold16);
         String text = Integer.toString(sensorValue);
-        int sx = drawX + (TILE_SIZE_X - fm.stringWidth(text)) / 2;
-        int sy = drawY + (TILE_SIZE_Y - fm.getHeight()) / 2 + fm.getAscent();
+        int sx = drawX + (GridTile.SIZE_X - fm.stringWidth(text)) / 2;
+        int sy = drawY + (GridTile.SIZE_Y - fm.getHeight()) / 2 + fm.getAscent();
         g.setColor(Color.BLACK);
         g.drawString(text, sx, sy);
         g.setFont(oldFont);
-    }
-
-    // clear this tile.
-    private void clearTile(int x, int y) {
-        GridTile tile = grid[x][y];
-        tile.hidden = false;
-        if (tile.type == 1) {
-            System.out.println("Poked a mine.  Game over!");
-            fireGameOver(false);
-            return;
-        }
-
-        if (tile.sensorValue > 0) return;
-
-        System.out.println("Revealing...");
-        revealAdjacentTiles(tile);
-        System.out.println("Done");
-    }
-
-    /// Recursively visit all adjacent hidden tiles with sensorValue=0 and reveal them until reaching tiles with
-    /// sensorValue>0.  Called when clearing a tile with sensorValue=0.
-    private void revealAdjacentTiles(GridTile startTile) {
-        // use a queue to avoid stack overflow from recursion, and a visited set to avoid infinite loops.
-        Queue<GridTile> toVisit = new LinkedList<>();
-        boolean [][] visited = new boolean [gridWidth][gridHeight];
-        toVisit.add(startTile);
-
-        while(!toVisit.isEmpty()) {
-            var tile = toVisit.poll();
-            visited[startTile.x][startTile.y] = true;
-            tile.hidden = false;
-            if (tile.sensorValue > 0) continue;
-
-            // queue new adjacent hidden unflagged tiles.
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    int nx = tile.x + dx;
-                    int ny = tile.y + dy;
-                    if (nx >= 0 && nx < gridWidth && ny >= 0 && ny < gridHeight) {
-                        GridTile adjacentTile = grid[nx][ny];
-                        // seen or in queue already, skip
-                        if(visited[adjacentTile.x][adjacentTile.y] || toVisit.contains(adjacentTile)) continue;
-                        // not hidden or flagged, skip
-                        if(!adjacentTile.hidden || adjacentTile.flagged) continue;
-                        // do it!
-                        toVisit.add(adjacentTile);
-                    }
-                }
-            }
-        }
     }
 
     // load artwork from resources.  Called once on the first frame.

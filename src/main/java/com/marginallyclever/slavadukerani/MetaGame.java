@@ -3,6 +3,8 @@ package com.marginallyclever.slavadukerani;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 
 /// MetaGame runs multiple instances of [SlavaDukerani] and provides a UX to control them.
 public class MetaGame extends JPanel implements FlagChangeListener, GameOverListener {
@@ -15,13 +17,13 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
     private final JMenuItem settingsButton = new JMenuItem("Settings");
     private final JMenuItem newGame = new JMenuItem("New Game");
     private final JMenuItem resetGame = new JMenuItem("Restart");
+    // Add copy/paste menu items (stubs) for future implementation
+    private final JMenuItem pasteBoard = new JMenuItem("Paste Board");
     private Timer timer;
     private long seconds;
 
 
     public static void main( String[] args ) {
-        // open a centered window with the title "Slava Dukerani"
-
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.add(new MetaGame());
         frame.pack();
@@ -36,6 +38,9 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
         newGame.addActionListener(e -> startNewGame());
         resetGame.addActionListener(e -> resetGame());
         settingsButton.addActionListener(e->showSettingsDialog());
+        // wire copy/paste actions to empty stubs
+        pasteBoard.addActionListener(e -> pasteBoardAction());
+
         startNewGame();
     }
 
@@ -54,7 +59,7 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
     private void resetGame() {
         int totalMines = settingsPanel.getMines();
         numMinesLeft.setValue(totalMines);
-        if(game!=null) {
+        if (game != null) {
             game.removeFlagChangeListener(this);
             game.setRequestFocusEnabled(false);
         }
@@ -63,6 +68,10 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
                 settingsPanel.getBoardHeight(),
                 settingsPanel.getSeed(),
                 settingsPanel.getMines());
+        startGame(game);
+    }
+
+    private void startGame(SlavaDukerani game) {
         removeAll();
         var pane = new JScrollPane(game);
         Dimension max = getSingleScreenSize(0.9f);
@@ -129,14 +138,22 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
         menuBar.add(menu);
         menu.add(settingsButton);
         menu.add(newGame);
+        resetGame.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK));
         menu.add(resetGame);
+        resetGame.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK));
+        // add Copy/Paste menu items (stubs)
+        menu.add(pasteBoard);
+        pasteBoard.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK));
+
         menu.add(new JSeparator());
-        menu.add(new AbstractAction("Exit") {
+        var exitItem = new JMenuItem(new AbstractAction("Exit") {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.exit(0);
             }
         });
+        menu.add(exitItem);
+        exitItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK));
 
         menu = new JMenu("Help");
         menuBar.add(menu);
@@ -185,5 +202,17 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
     @Override
     public void gameOver(boolean won) {
         timer.stop();
+    }
+
+    // Stub for paste action; to be implemented later.
+    private void pasteBoardAction() {
+        // read clipboard to String
+        try {
+            String clipboard = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
+            // attempt to parse clipboard as a board and start a new game with it
+            startGame(new SlavaDukerani(clipboard));
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(frame, "Failed to parse board from clipboard. Please ensure the clipboard contains a valid board string.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
