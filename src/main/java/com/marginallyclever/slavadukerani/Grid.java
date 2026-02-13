@@ -62,14 +62,7 @@ public class Grid {
     }
 
     private void initGrid() {
-        try {
-            flagImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("flag-32.png")));
-            mineImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("mine.png")));
-            exitImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("exit-32.png")));
-            hiddenImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("hidden.png")));
-        } catch(Exception e) {
-            System.out.println("Error loading images: " + e.getMessage());
-        }
+        loadArt();
 
         // allocate empty grid
         tiles = new GridTile[gridWidth][gridHeight];
@@ -80,9 +73,11 @@ public class Grid {
         }
         tiles[gridWidth-1][gridHeight-1].type = 2; // exit
 
-        tiles[0][0].type = GridTile.TYPE_RESERVED; // temp fill so first click isn't a mine, will be cleared later
-        tiles[0][1].type = GridTile.TYPE_RESERVED; // temp fill so first click isn't a mine, will be cleared later
-        tiles[1][0].type = GridTile.TYPE_RESERVED; // temp fill so first click isn't a mine, will be cleared later
+        // temp fill so first click isn't a mine, will be cleared later
+        tiles[0][0].type = GridTile.TYPE_RESERVED;
+        tiles[1][0].type = GridTile.TYPE_RESERVED;
+        tiles[0][1].type = GridTile.TYPE_RESERVED;
+        tiles[1][1].type = GridTile.TYPE_RESERVED;
 
         // add some mines
         placeMines();
@@ -90,10 +85,22 @@ public class Grid {
         tiles[0][0].type = GridTile.TYPE_EMPTY; // clear
         tiles[0][1].type = GridTile.TYPE_EMPTY; // clear
         tiles[1][0].type = GridTile.TYPE_EMPTY; // clear
+        tiles[1][1].type = GridTile.TYPE_EMPTY; // clear
 
         calculateSensorValues();
         revealTile(0,0);
         revealTile(1,1);
+    }
+
+    private void loadArt() {
+        try {
+            flagImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("flag-32.png")));
+            mineImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("mine.png")));
+            exitImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("exit-32.png")));
+            hiddenImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("hidden.png")));
+        } catch(Exception e) {
+            System.out.println("Error loading images: " + e.getMessage());
+        }
     }
 
     public int getGridWidth() {
