@@ -3,6 +3,7 @@ package com.marginallyclever.slavadukerani;
 import javax.swing.*;
 import javax.swing.text.NumberFormatter;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.text.NumberFormat;
 
 /// Convenience methods for creating and configuring Swing components for the game.
@@ -40,5 +41,16 @@ public class PanelHelper {
         field.setColumns(3);
         field.setMinimumSize(new Dimension(0,20));
         return field;
+    }
+
+    public static void drawImage(Graphics g, BufferedImage img, int x, int y, Color fallbackColor) {
+        int dx = x * GridTile.SIZE_X;
+        int dy = y * GridTile.SIZE_Y;
+        if (img != null) {
+            g.drawImage(img, dx, dy, GridTile.SIZE_X, GridTile.SIZE_Y, null);
+        } else {
+            g.setColor(fallbackColor);
+            g.fillRect(dx, dy, GridTile.SIZE_X, GridTile.SIZE_Y);
+        }
     }
 }

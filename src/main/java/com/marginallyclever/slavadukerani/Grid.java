@@ -1,6 +1,10 @@
 package com.marginallyclever.slavadukerani;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Random;
 
@@ -11,6 +15,13 @@ public class Grid {
 
     private final Random rand;
     private int numMines = 0;
+
+    private BufferedImage
+            flagImage,
+            mineImage,
+            exitImage,
+            emptyImage,
+            hiddenImage;
 
     /// Construct a new Grid game with the specified grid size, seed, and number of mines.
     /// @param gridWidth  Width of the grid in tiles.
@@ -51,6 +62,15 @@ public class Grid {
     }
 
     private void initGrid() {
+        try {
+            flagImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("flag-32.png")));
+            mineImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("mine.png")));
+            exitImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("exit-32.png")));
+            hiddenImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("hidden.png")));
+        } catch(Exception e) {
+            System.out.println("Error loading images: " + e.getMessage());
+        }
+
         // allocate empty grid
         tiles = new GridTile[gridWidth][gridHeight];
         for (int x = 0; x< gridWidth; x++) {
@@ -174,6 +194,50 @@ public class Grid {
                         toVisit.add(adjacentTile);
                     }
                 }
+            }
+        }
+    }
+
+    public void paintComponent(Graphics g,boolean showAll) {
+        // draw all tiles
+        for(int x = 0; x< getGridWidth(); ++x) {
+            for(int y = 0; y< getGridHeight(); ++y) {
+                drawOneTile(g,x,y,showAll);
+            }
+        }
+    }
+
+    private void drawOneTile(Graphics g, int x, int y,boolean showAll) {
+        GridTile tile = getTile(x,y);
+        int drawX = x * GridTile.SIZE_X;
+        int drawY = y * GridTile.SIZE_Y;
+
+        // draw hidden tile
+        if(tile.hidden) {
+            PanelHelper.drawImage(g,hiddenImage,x,y,Color.GRAY);
+            if(showAll) {
+                // if game over, show mines
+                if(tile.type==1) {
+                    PanelHelper.drawImage(g, mineImage,x,y,Color.BLACK);
+                }
+            } else if(tile.flagged) {
+                PanelHelper.drawImage(g, flagImage,x,y,Color.WHITE);
+            }
+        } else {
+            // draw revealed tile
+            switch (tile.type) {
+                case GridTile.TYPE_EMPTY:
+                    PanelHelper.drawImage(g,emptyImage,x,y,Color.WHITE);
+                    // draw tile border
+                    g.setColor(Color.DARK_GRAY);
+                    g.drawRect(drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y);
+                    break;
+                case GridTile.TYPE_MINE:
+                    PanelHelper.drawImage(g, mineImage,x,y,Color.BLACK);
+                    break;
+                case GridTile.TYPE_EXIT:
+                    PanelHelper.drawImage(g, exitImage,x,y,Color.GREEN);
+                    break;
             }
         }
     }

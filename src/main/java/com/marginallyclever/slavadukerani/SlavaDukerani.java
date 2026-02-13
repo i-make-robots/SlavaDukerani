@@ -38,13 +38,8 @@ public class SlavaDukerani extends JPanel {
     private GridTile hoverOver;  // the cursor is over this tile.
     private final EventListenerList listenerList = new EventListenerList();
 
-    // add field
     private BufferedImage playerImage,
-            sensorImage,
-            flagImage,
-            mineImage,
-            exitImage;
-
+            sensorImage;
 
     private int px = 0, py = 0;  // player position
     private int sx = 1, sy = 1;  // sensor position
@@ -170,7 +165,7 @@ public class SlavaDukerani extends JPanel {
                 boolean isRight = SwingUtilities.isRightMouseButton(e);
                 if(isLeft) leftDown=true;
                 if(isRight) rightDown=true;
-                System.out.println("Mouse pressed at: " + e.getX() + "," + e.getY()+"  Left: "+leftDown+"  Right: "+rightDown);
+                //System.out.println("Mouse pressed at: " + e.getX() + "," + e.getY()+"  Left: "+leftDown+"  Right: "+rightDown);
                 clickEvent(leftDown,rightDown);
             }
 
@@ -326,15 +321,10 @@ public class SlavaDukerani extends JPanel {
             initialized=true;
         }
 
-        // draw all tiles
-        for(int x = 0; x< grid.getGridWidth(); ++x) {
-            for(int y = 0; y< grid.getGridHeight(); ++y) {
-                drawOneTile(g,x,y);
-            }
-        }
+        grid.paintComponent(g,gameOver);
 
-        drawImage(g,playerImage,px,py,Color.BLUE);
-        drawImage(g,sensorImage, sx, sy,Color.ORANGE);
+        PanelHelper.drawImage(g, playerImage, px, py, Color.BLUE);
+        PanelHelper.drawImage(g, sensorImage, sx, sy,Color.ORANGE);
         highlightHoverOver(g);
         drawSensorRange(g);
 
@@ -395,55 +385,6 @@ public class SlavaDukerani extends JPanel {
         g2d.drawRect(drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y);
     }
 
-    private void drawImage(Graphics g, BufferedImage img, int x, int y,Color fallbackColor) {
-        int dx = x * GridTile.SIZE_X;
-        int dy = y * GridTile.SIZE_Y;
-        if (img != null) {
-            g.drawImage(img, dx, dy, GridTile.SIZE_X, GridTile.SIZE_Y, null);
-        } else {
-            g.setColor(fallbackColor);
-            g.fillRect(dx, dy, GridTile.SIZE_X, GridTile.SIZE_Y);
-        }
-    }
-
-    private void drawOneTile(Graphics g, int x, int y) {
-        GridTile tile = grid.getTile(x,y);
-        int drawX = x * GridTile.SIZE_X;
-        int drawY = y * GridTile.SIZE_Y;
-
-        // draw hidden tile
-        if(tile.hidden) {
-            g.setColor(Color.GRAY);
-            g.fillRect(drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y);
-            if(gameOver) {
-                // if game over, show mines
-                if(tile.type==1) {
-                    drawImage(g, mineImage,x,y,Color.BLACK);
-                }
-            } else if(tile.flagged) {
-                g.setColor(Color.WHITE);
-                g.drawImage(flagImage, drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y, null);
-            }
-        } else {
-            // draw revealed tile
-            switch (tile.type) {
-                case GridTile.TYPE_EMPTY:
-                    g.setColor(Color.WHITE);
-                    g.fillRect(drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y);
-                    break;
-                case GridTile.TYPE_MINE:
-                    drawImage(g, mineImage,x,y,Color.BLACK);
-                    break;
-                case GridTile.TYPE_EXIT:
-                    drawImage(g, exitImage,x,y,Color.GREEN);
-                    break;
-            }
-        }
-        // draw tile border
-        g.setColor(Color.DARK_GRAY);
-        g.drawRect(drawX, drawY, GridTile.SIZE_X, GridTile.SIZE_Y);
-    }
-
     private void drawSensorValue(Graphics g, int drawX, int drawY, int sensorValue) {
         // set bold 16px font and center the text using FontMetrics
         Font oldFont = g.getFont();
@@ -481,10 +422,7 @@ public class SlavaDukerani extends JPanel {
             e.printStackTrace();
         }
 
-        sensorImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("sensor.png")));
-        flagImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("flag-32.png")));
-        mineImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("mine.png")));
-        exitImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("exit-32.png")));
+        sensorImage = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("sensor.png" )));
     }
 
     // helper to list pngs from a resource folder (handles both file and jar)
