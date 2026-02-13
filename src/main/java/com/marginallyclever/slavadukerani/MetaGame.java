@@ -138,7 +138,7 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
         menuBar.add(menu);
         menu.add(settingsButton);
         menu.add(newGame);
-        resetGame.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK));
+        newGame.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK));
         menu.add(resetGame);
         resetGame.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK));
         // add Copy/Paste menu items (stubs)
@@ -190,7 +190,9 @@ public class MetaGame extends JPanel implements FlagChangeListener, GameOverList
         numMinesLeft.setFocusable(false);
         timeDisplay.setEditable(false);
         timeDisplay.setFocusable(false);
-        // timeDisplay right justified
+
+        // right justified
+        numMinesLeft.setHorizontalAlignment(JTextField.RIGHT);
         timeDisplay.setHorizontalAlignment(JTextField.RIGHT);
     }
 
